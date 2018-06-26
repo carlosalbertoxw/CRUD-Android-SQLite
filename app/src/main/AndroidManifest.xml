@@ -18,7 +18,6 @@
         </activity>
         <activity android:name=".activities.NoteFormActivity" />
         <activity android:name=".activities.NoteListActivity" />
-        <activity android:name=".adapters.NoteListAdapter"></activity>
     </application>
 
 </manifest>
