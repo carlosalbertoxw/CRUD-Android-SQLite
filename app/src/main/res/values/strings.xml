@@ -1,3 +1,26 @@
 <resources>
-    <string name="app_name">CRUD-Android-SQLite</string>
+    <string name="app_name">Notas</string>
+
+    <!-- Lista -->
+    <string name="notes_title">Mis notas</string>
+    <string name="search_hint">Buscar notas</string>
+    <string name="clear_search">Limpiar búsqueda</string>
+    <string name="add_note">Agregar nota</string>
+    <string name="empty_notes">Aún no tienes notas.\nPulsa + para crear la primera.</string>
+    <string name="empty_search">No se encontraron notas para «%1$s».</string>
+
+    <!-- Formulario -->
+    <string name="new_note">Nueva nota</string>
+    <string name="edit_note">Editar nota</string>
+    <string name="field_title">Título</string>
+    <string name="field_text">Contenido</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="back">Volver</string>
+    <string name="validation_empty">Escribe un título y algo de contenido.</string>
+
+    <!-- Diálogo de borrado -->
+    <string name="delete_confirm_title">¿Eliminar nota?</string>
+    <string name="delete_confirm_message">Esta acción no se puede deshacer.</string>
+    <string name="cancel">Cancelar</string>
 </resources>

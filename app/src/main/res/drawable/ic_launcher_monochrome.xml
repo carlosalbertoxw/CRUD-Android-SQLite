@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Silueta de una hoja de nota con líneas caladas (evenOdd = huecos).
+         El sistema aplica el color del tema; aquí solo importa la forma. -->
+    <path
+        android:fillColor="#000000"
+        android:fillType="evenOdd"
+        android:pathData="M42,30 L66,30 Q72,30 72,36 L72,72 Q72,78 66,78 L42,78 Q36,78 36,72 L36,36 Q36,30 42,30 Z
+                          M42,40.5 L66,40.5 L66,43.5 L42,43.5 Z
+                          M42,48.5 L66,48.5 L66,51.5 L42,51.5 Z
+                          M42,56.5 L66,56.5 L66,59.5 L42,59.5 Z
+                          M42,64.5 L58,64.5 L58,67.5 L42,67.5 Z" />
+</vector>

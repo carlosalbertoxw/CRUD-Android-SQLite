@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base de la ventana. La apariencia real la define Compose (Material 3);
+         aquí solo evitamos la ActionBar del sistema para dibujar toda la pantalla. -->
+    <style name="Theme.CrudSQLite" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
