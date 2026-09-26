@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Tema base de la ventana. La apariencia real la define Compose (Material 3);
-         aquí solo evitamos la ActionBar del sistema para dibujar toda la pantalla. -->
-    <style name="Theme.CrudSQLite" parent="android:Theme.Material.Light.NoActionBar" />
+         aquí solo evitamos la ActionBar del sistema y fijamos el color de fondo
+         para que no haya un destello de otro color al abrir la app.
+         En modo oscuro se usa la variante de values-night/themes.xml. -->
+    <style name="Theme.CrudSQLite" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!-- Tema del splash (librería core-splashscreen): funciona igual desde
+         Android 7 hasta las versiones con la API nativa de SplashScreen (12+).
+         Al terminar, la actividad pasa a Theme.CrudSQLite. -->
+    <style name="Theme.CrudSQLite.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.CrudSQLite</item>
+    </style>
 </resources>

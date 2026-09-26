@@ -22,15 +22,20 @@ interface NoteDao {
     @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
     fun observeAll(): Flow<List<Note>>
 
+    /**
+     * Busca [pattern] dentro del título o del contenido. El patrón debe llegar
+     * con `%`, `_` y `\` escapados (ver [escapeLike]) para que se busquen de
+     * forma literal y no como comodines de `LIKE`.
+     */
     @Query(
         """
         SELECT * FROM notes
-        WHERE title LIKE '%' || :query || '%'
-           OR text  LIKE '%' || :query || '%'
+        WHERE title LIKE '%' || :pattern || '%' ESCAPE '\'
+           OR text  LIKE '%' || :pattern || '%' ESCAPE '\'
         ORDER BY updatedAt DESC
         """
     )
-    fun search(query: String): Flow<List<Note>>
+    fun search(pattern: String): Flow<List<Note>>
 
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getById(id: Long): Note?
@@ -44,3 +49,7 @@ interface NoteDao {
     @Delete
     suspend fun delete(note: Note)
 }
+
+/** Escapa los comodines de `LIKE` para que el texto se busque tal cual. */
+fun String.escapeLike(): String =
+    replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

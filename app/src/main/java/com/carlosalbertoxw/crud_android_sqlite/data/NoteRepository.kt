@@ -11,7 +11,7 @@ class NoteRepository(private val dao: NoteDao) {
 
     val notes: Flow<List<Note>> = dao.observeAll()
 
-    fun search(query: String): Flow<List<Note>> = dao.search(query)
+    fun search(query: String): Flow<List<Note>> = dao.search(query.escapeLike())
 
     suspend fun getById(id: Long): Note? = dao.getById(id)
 
@@ -30,4 +30,12 @@ class NoteRepository(private val dao: NoteDao) {
     }
 
     suspend fun delete(note: Note) = dao.delete(note)
+
+    /**
+     * Vuelve a insertar una nota recién borrada tal como estaba (mismo id y
+     * fecha), para la acción "Deshacer".
+     */
+    suspend fun restore(note: Note) {
+        dao.insert(note)
+    }
 }

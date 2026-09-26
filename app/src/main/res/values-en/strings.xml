@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Notes</string>
+
+    <!-- List -->
+    <string name="notes_title">My notes</string>
+    <string name="search_hint">Search notes</string>
+    <string name="clear_search">Clear search</string>
+    <string name="add_note">Add note</string>
+    <string name="empty_notes">You don\'t have any notes yet.\nTap + to create the first one.</string>
+    <string name="empty_search">No notes found for “%1$s”.</string>
+    <string name="note_deleted">Note deleted</string>
+    <string name="undo">Undo</string>
+
+    <!-- Form -->
+    <string name="new_note">New note</string>
+    <string name="edit_note">Edit note</string>
+    <string name="field_title">Title</string>
+    <string name="field_text">Content</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="back">Back</string>
+    <string name="validation_empty">Enter a title and some content.</string>
+
+    <!-- Unsaved changes dialog -->
+    <string name="discard_title">Discard changes?</string>
+    <string name="discard_message">You have unsaved changes in this note.</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
+</resources>

@@ -1,0 +1,32 @@
+name: Android CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Descarga Gradle y guarda en caché dependencias y resultados entre ejecuciones.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Pruebas unitarias, lint y compilación
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease
+
+      - name: Reportes
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reportes
+          path: |
+            app/build/reports/
+            app/build/test-results/

@@ -11,8 +11,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *
  * Se expone como singleton: crear una instancia de Room es costoso, así que la
  * app comparte una sola para todo su ciclo de vida.
+ *
+ * El esquema de cada versión se exporta a `app/schemas/`. Si en el futuro se
+ * modifica [Note], hay que subir `version` y declarar la migración, por ejemplo
+ * `autoMigrations = [AutoMigration(from = 1, to = 2)]`; Room compara los JSON
+ * exportados para generarla. Sin migración, la app fallaría al abrir la base de
+ * los usuarios que ya tienen datos.
  */
-@Database(entities = [Note::class], version = 1, exportSchema = false)
+@Database(entities = [Note::class], version = 1, exportSchema = true)
 abstract class NoteDatabase : RoomDatabase() {
 
     abstract fun noteDao(): NoteDao
@@ -44,8 +50,8 @@ abstract class NoteDatabase : RoomDatabase() {
                     arrayOf<Any>(
                         "Bienvenido a Notas",
                         "Esta es una nota de ejemplo. Tócala para editarla, usa el " +
-                            "botón + para crear otra y desliza por la lista para verlas " +
-                            "todas. También puedes buscarlas por título o contenido.",
+                            "botón + para crear otra y deslízala hacia la izquierda para " +
+                            "borrarla. También puedes buscar por título o contenido.",
                         System.currentTimeMillis()
                     )
                 )

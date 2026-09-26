@@ -77,4 +77,29 @@ class NoteRepositoryTest {
         val porTexto = repository.search("compr").first()
         assertEquals(2, porTexto.size)
     }
+
+    @Test
+    fun `search trata los comodines de LIKE como texto literal`() = runTest {
+        repository.save(Note(title = "Descuento", text = "50% en todo"))
+        repository.save(Note(title = "Otra", text = "sin porcentaje"))
+
+        assertEquals(1, repository.search("%").first().size)
+        assertTrue(repository.search("_").first().isEmpty())
+    }
+
+    @Test
+    fun `escapeLike escapa comodines y la barra invertida`() {
+        assertEquals("""100\% a\_b c\\d""", """100% a_b c\d""".escapeLike())
+    }
+
+    @Test
+    fun `restore vuelve a insertar la nota borrada con el mismo id`() = runTest {
+        val id = repository.save(Note(title = "Importante", text = "no borrar"))
+        val note = repository.getById(id)!!
+        repository.delete(note)
+
+        repository.restore(note)
+
+        assertEquals(note, repository.getById(id))
+    }
 }

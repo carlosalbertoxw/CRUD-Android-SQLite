@@ -88,4 +88,13 @@ class NoteDaoTest {
         val results = dao.search("compr").first()
         assertEquals("debe coincidir en título y en texto", 2, results.size)
     }
+
+    @Test
+    fun searchTreatsWildcardsLiterally() = runTest {
+        dao.insert(Note(title = "Descuento", text = "50% en todo"))
+        dao.insert(Note(title = "Otra", text = "sin porcentaje"))
+
+        assertEquals(1, dao.search("%".escapeLike()).first().size)
+        assertTrue(dao.search("_".escapeLike()).first().isEmpty())
+    }
 }

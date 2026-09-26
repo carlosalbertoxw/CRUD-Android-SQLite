@@ -4,16 +4,19 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.carlosalbertoxw.crud_android_sqlite.R
 import com.carlosalbertoxw.crud_android_sqlite.data.Note
 import com.carlosalbertoxw.crud_android_sqlite.data.NoteDatabase
 import com.carlosalbertoxw.crud_android_sqlite.data.NoteRepository
@@ -37,8 +40,10 @@ class NoteListScreenTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+    private fun str(id: Int) = composeRule.activity.getString(id)
+
     private lateinit var db: NoteDatabase
-    private lateinit var viewModel: NotesViewModel
+    private lateinit var viewModel: NoteListViewModel
 
     @Before
     fun setUp() {
@@ -46,7 +51,7 @@ class NoteListScreenTest {
         db = Room.inMemoryDatabaseBuilder(context, NoteDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        viewModel = NotesViewModel(NoteRepository(db.noteDao()))
+        viewModel = NoteListViewModel(NoteRepository(db.noteDao()))
     }
 
     @After
@@ -60,7 +65,7 @@ class NoteListScreenTest {
             CrudTheme { NoteListScreen(viewModel, onAddNote = {}, onNoteClick = {}) }
         }
 
-        composeRule.onNodeWithText("Aún no tienes notas", substring = true)
+        composeRule.onNodeWithText(str(R.string.empty_notes))
             .assertIsDisplayed()
     }
 
@@ -71,7 +76,7 @@ class NoteListScreenTest {
             CrudTheme { NoteListScreen(viewModel, onAddNote = { clicked = true }, onNoteClick = {}) }
         }
 
-        composeRule.onNodeWithContentDescription("Agregar nota").performClick()
+        composeRule.onNodeWithContentDescription(str(R.string.add_note)).performClick()
 
         assertTrue(clicked)
     }
@@ -114,6 +119,32 @@ class NoteListScreenTest {
             composeRule.onAllNodesWithText("Trabajo", substring = true)
                 .fetchSemanticsNodes().isEmpty()
         }
-        composeRule.onNodeWithText("Compras", substring = true).assertIsDisplayed()
+        // El propio buscador también contiene "Compras": se excluye con
+        // !hasSetTextAction() para comprobar solo la tarjeta de la nota.
+        composeRule.onNode(hasText("Compras") and !hasSetTextAction()).assertIsDisplayed()
+    }
+
+    @Test
+    fun deslizarNota_laBorraYPermiteDeshacer() {
+        runBlocking { db.noteDao().insert(Note(title = "Deslizable", text = "x")) }
+
+        composeRule.setContent {
+            CrudTheme { NoteListScreen(viewModel, onAddNote = {}, onNoteClick = {}) }
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Deslizable").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithText("Deslizable").performTouchInput { swipeLeft() }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText(str(R.string.undo)).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText(str(R.string.undo)).performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Deslizable").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Deslizable").assertIsDisplayed()
     }
 }

@@ -1,0 +1,5 @@
+# Finales de línea fijos para los scripts de Gradle, sin importar el sistema
+# operativo de quien haga checkout (el CI corre en Linux).
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary

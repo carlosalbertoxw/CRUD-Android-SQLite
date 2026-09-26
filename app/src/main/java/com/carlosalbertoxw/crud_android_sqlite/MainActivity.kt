@@ -8,27 +8,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.carlosalbertoxw.crud_android_sqlite.ui.NotesViewModel
-import com.carlosalbertoxw.crud_android_sqlite.ui.NotesViewModelFactory
+import androidx.navigation.toRoute
+import com.carlosalbertoxw.crud_android_sqlite.ui.NEW_NOTE_ID
+import com.carlosalbertoxw.crud_android_sqlite.ui.NoteFormViewModel
+import com.carlosalbertoxw.crud_android_sqlite.ui.NoteListViewModel
 import com.carlosalbertoxw.crud_android_sqlite.ui.screens.NoteFormScreen
 import com.carlosalbertoxw.crud_android_sqlite.ui.screens.NoteListScreen
 import com.carlosalbertoxw.crud_android_sqlite.ui.theme.CrudTheme
+import kotlinx.serialization.Serializable
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Debe llamarse antes de super.onCreate: muestra el splash con el icono
+        // y luego cambia al tema normal de la app.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // Repositorio creado en la Application (una sola instancia para toda la app).
-        val repository = (application as CrudApplication).repository
-        val factory = NotesViewModelFactory(repository)
 
         setContent {
             CrudTheme {
@@ -36,44 +41,57 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NotesApp(factory)
+                    NotesApp()
                 }
             }
         }
     }
 }
 
-private object Routes {
-    const val LIST = "list"
-    const val FORM = "form"
-    const val ARG_ID = "noteId"
-    fun form(noteId: Long = 0L) = "$FORM/$noteId"
-}
+// Rutas de navegación con tipos seguros: el compilador comprueba los
+// argumentos en lugar de construir cadenas como "form/{noteId}" a mano.
+@Serializable
+private data object NoteList
+
+@Serializable
+private data class NoteForm(val noteId: Long = NEW_NOTE_ID)
 
 @Composable
-private fun NotesApp(factory: NotesViewModelFactory) {
+private fun NotesApp() {
     val navController = rememberNavController()
-    // Un único ViewModel compartido por ambas pantallas.
-    val viewModel: NotesViewModel = viewModel(factory = factory)
 
-    NavHost(navController = navController, startDestination = Routes.LIST) {
-        composable(Routes.LIST) {
+    NavHost(navController = navController, startDestination = NoteList) {
+        composable<NoteList> { backStackEntry ->
             NoteListScreen(
-                viewModel = viewModel,
-                onAddNote = { navController.navigate(Routes.form()) },
-                onNoteClick = { id -> navController.navigate(Routes.form(id)) }
+                viewModel = viewModel(factory = NoteListViewModel.Factory),
+                // dropUnlessResumed ignora toques repetidos mientras ya se está
+                // navegando (evita abrir la misma pantalla dos veces).
+                onAddNote = dropUnlessResumed { navController.navigate(NoteForm()) },
+                onNoteClick = { id ->
+                    if (backStackEntry.isResumed()) navController.navigate(NoteForm(id))
+                }
             )
         }
-        composable(
-            route = "${Routes.FORM}/{${Routes.ARG_ID}}",
-            arguments = listOf(navArgument(Routes.ARG_ID) { type = NavType.LongType })
-        ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getLong(Routes.ARG_ID) ?: 0L
+        composable<NoteForm> { backStackEntry ->
+            val noteId = backStackEntry.toRoute<NoteForm>().noteId
+            // El borrado lo hace el ViewModel de la lista (que sigue vivo debajo)
+            // para poder mostrar allí el Snackbar de "Deshacer".
+            val listEntry = remember(backStackEntry) { navController.getBackStackEntry<NoteList>() }
+            val listViewModel: NoteListViewModel =
+                viewModel(listEntry, factory = NoteListViewModel.Factory)
+            val goBack = dropUnlessResumed { navController.popBackStack() }
+
             NoteFormScreen(
-                viewModel = viewModel,
-                noteId = noteId,
-                onDone = { navController.popBackStack() }
+                viewModel = viewModel(factory = NoteFormViewModel.factory(noteId)),
+                onDone = goBack,
+                onDelete = {
+                    listViewModel.deleteById(noteId)
+                    goBack()
+                }
             )
         }
     }
 }
+
+private fun NavBackStackEntry.isResumed() =
+    lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)

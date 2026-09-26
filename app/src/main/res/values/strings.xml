@@ -8,6 +8,8 @@
     <string name="add_note">Agregar nota</string>
     <string name="empty_notes">Aún no tienes notas.\nPulsa + para crear la primera.</string>
     <string name="empty_search">No se encontraron notas para «%1$s».</string>
+    <string name="note_deleted">Nota eliminada</string>
+    <string name="undo">Deshacer</string>
 
     <!-- Formulario -->
     <string name="new_note">Nueva nota</string>
@@ -19,8 +21,9 @@
     <string name="back">Volver</string>
     <string name="validation_empty">Escribe un título y algo de contenido.</string>
 
-    <!-- Diálogo de borrado -->
-    <string name="delete_confirm_title">¿Eliminar nota?</string>
-    <string name="delete_confirm_message">Esta acción no se puede deshacer.</string>
-    <string name="cancel">Cancelar</string>
+    <!-- Diálogo de cambios sin guardar -->
+    <string name="discard_title">¿Descartar cambios?</string>
+    <string name="discard_message">Tienes cambios sin guardar en esta nota.</string>
+    <string name="discard">Descartar</string>
+    <string name="keep_editing">Seguir editando</string>
 </resources>
