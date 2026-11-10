@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.ManagedVirtualDevice
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -15,7 +17,7 @@ android {
     defaultConfig {
         applicationId = "com.carlosalbertoxw.crud_android_sqlite"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 3
         versionName = "2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -40,6 +42,30 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        // Cualquier advertencia de lint hace fallar el build (también en CI).
+        warningsAsErrors = true
+        // Las versiones nuevas de dependencias las propone Dependabot; si lint
+        // también las reportara, el build fallaría cada vez que sale una.
+        disable += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
+    }
+
+    testOptions {
+        // Emulador gestionado por Gradle para las pruebas instrumentadas:
+        // ./gradlew pixel6Api34DebugAndroidTest lo descarga, lo arranca, corre
+        // las pruebas y lo apaga. Es lo que usa el CI.
+        managedDevices {
+            allDevices {
+                create<ManagedVirtualDevice>("pixel6Api34") {
+                    device = "Pixel 6"
+                    apiLevel = 34
+                    // Imagen "ATD": optimizada para pruebas automatizadas.
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
+    }
 }
 
 kotlin {
@@ -50,14 +76,18 @@ kotlin {
 
 room {
     // Guarda el esquema de cada versión de la base en app/schemas (se versiona
-    // en git). Es lo que permite generar y probar migraciones en el futuro.
+    // en git). Room lo usa para generar las migraciones automáticas y para
+    // probarlas con MigrationTestHelper.
     schemaDirectory("$projectDir/schemas")
 }
 
+ktlint {
+    // El estilo (android_studio) y las excepciones están en .editorconfig.
+    version = libs.versions.ktlint
+}
+
 dependencies {
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.savedstate)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -72,18 +102,13 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.core)
 
     // Room (persistencia sobre SQLite)
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-
-    debugImplementation(libs.androidx.ui.tooling)
 
     // Pruebas unitarias locales (JVM)
     testImplementation(libs.junit)
@@ -91,7 +116,7 @@ dependencies {
 
     // Pruebas instrumentadas (requieren emulador o dispositivo)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -43,6 +43,7 @@ class NoteListScreenTest {
     private fun str(id: Int) = composeRule.activity.getString(id)
 
     private lateinit var db: NoteDatabase
+    private lateinit var repository: NoteRepository
     private lateinit var viewModel: NoteListViewModel
 
     @Before
@@ -51,7 +52,8 @@ class NoteListScreenTest {
         db = Room.inMemoryDatabaseBuilder(context, NoteDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        viewModel = NoteListViewModel(NoteRepository(db.noteDao()))
+        repository = NoteRepository(db.noteDao())
+        viewModel = NoteListViewModel(repository)
     }
 
     @After
@@ -73,7 +75,9 @@ class NoteListScreenTest {
     fun botonAgregar_invocaElCallback() {
         var clicked = false
         composeRule.setContent {
-            CrudTheme { NoteListScreen(viewModel, onAddNote = { clicked = true }, onNoteClick = {}) }
+            CrudTheme {
+                NoteListScreen(viewModel, onAddNote = { clicked = true }, onNoteClick = {})
+            }
         }
 
         composeRule.onNodeWithContentDescription(str(R.string.add_note)).performClick()
@@ -83,7 +87,7 @@ class NoteListScreenTest {
 
     @Test
     fun notaExistente_seMuestraEnLaLista() {
-        runBlocking { db.noteDao().insert(Note(title = "Mi primera nota", text = "hola")) }
+        runBlocking { repository.save(Note(title = "Mi primera nota", text = "hola")) }
 
         composeRule.setContent {
             CrudTheme { NoteListScreen(viewModel, onAddNote = {}, onNoteClick = {}) }
@@ -99,8 +103,8 @@ class NoteListScreenTest {
     @Test
     fun busqueda_filtraLasNotas() {
         runBlocking {
-            db.noteDao().insert(Note(title = "Compras", text = "leche"))
-            db.noteDao().insert(Note(title = "Trabajo", text = "reunión"))
+            repository.save(Note(title = "Compras", text = "leche"))
+            repository.save(Note(title = "Trabajo", text = "reunión"))
         }
 
         composeRule.setContent {
@@ -113,20 +117,21 @@ class NoteListScreenTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeRule.onNode(hasSetTextAction()).performTextInput("Compras")
+        // En minúsculas a propósito: la búsqueda no distingue mayúsculas.
+        composeRule.onNode(hasSetTextAction()).performTextInput("compras")
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodesWithText("Trabajo", substring = true)
                 .fetchSemanticsNodes().isEmpty()
         }
-        // El propio buscador también contiene "Compras": se excluye con
-        // !hasSetTextAction() para comprobar solo la tarjeta de la nota.
+        // Se excluye el propio buscador con !hasSetTextAction() para
+        // comprobar solo la tarjeta de la nota.
         composeRule.onNode(hasText("Compras") and !hasSetTextAction()).assertIsDisplayed()
     }
 
     @Test
     fun deslizarNota_laBorraYPermiteDeshacer() {
-        runBlocking { db.noteDao().insert(Note(title = "Deslizable", text = "x")) }
+        runBlocking { repository.save(Note(title = "Deslizable", text = "x")) }
 
         composeRule.setContent {
             CrudTheme { NoteListScreen(viewModel, onAddNote = {}, onNoteClick = {}) }

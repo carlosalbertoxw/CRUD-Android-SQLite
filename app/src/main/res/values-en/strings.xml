@@ -26,4 +26,12 @@
     <string name="discard_message">You have unsaved changes in this note.</string>
     <string name="discard">Discard</string>
     <string name="keep_editing">Keep editing</string>
+
+    <!-- Errors -->
+    <string name="save_failed">The note couldn\'t be saved. Please try again.</string>
+    <string name="operation_failed">The operation couldn\'t be completed.</string>
+
+    <!-- Sample note created on first launch -->
+    <string name="seed_title">Welcome to Notes</string>
+    <string name="seed_text">This is a sample note. Tap it to edit it, use the + button to create another one and swipe it to the left to delete it. You can also search by title or content.</string>
 </resources>

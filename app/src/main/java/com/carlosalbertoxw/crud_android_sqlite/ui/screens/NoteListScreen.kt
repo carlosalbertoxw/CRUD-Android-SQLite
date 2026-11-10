@@ -10,11 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,13 +35,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carlosalbertoxw.crud_android_sqlite.R
-import com.carlosalbertoxw.crud_android_sqlite.data.Note
+import com.carlosalbertoxw.crud_android_sqlite.data.NotePreview
+import com.carlosalbertoxw.crud_android_sqlite.ui.ListEvent
 import com.carlosalbertoxw.crud_android_sqlite.ui.NoteListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,17 +58,24 @@ fun NoteListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val deletedMessage = stringResource(R.string.note_deleted)
     val undoLabel = stringResource(R.string.undo)
+    val failedMessage = stringResource(R.string.operation_failed)
 
     // Cada nota borrada (desde la lista o desde el formulario) muestra un
     // Snackbar con la opción de deshacer.
     LaunchedEffect(viewModel) {
-        viewModel.deletedNotes.collect { note ->
-            val result = snackbarHostState.showSnackbar(
-                message = deletedMessage,
-                actionLabel = undoLabel,
-                duration = SnackbarDuration.Short
-            )
-            if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete(note)
+        viewModel.events.collect { event ->
+            when (event) {
+                is ListEvent.Deleted -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = deletedMessage,
+                        actionLabel = undoLabel,
+                        duration = SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.undoDelete(event.note)
+                }
+
+                ListEvent.Failed -> snackbarHostState.showSnackbar(failedMessage)
+            }
         }
     }
 
@@ -81,7 +85,10 @@ fun NoteListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddNote) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_note))
+                Icon(
+                    painterResource(R.drawable.ic_add),
+                    contentDescription = stringResource(R.string.add_note)
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -94,12 +101,14 @@ fun NoteListScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = {
+                    Icon(painterResource(R.drawable.ic_search), contentDescription = null)
+                },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchChange("") }) {
                             Icon(
-                                Icons.Default.Close,
+                                painterResource(R.drawable.ic_close),
                                 contentDescription = stringResource(R.string.clear_search)
                             )
                         }
@@ -126,7 +135,7 @@ fun NoteListScreen(
                         SwipeToDeleteNote(
                             note = note,
                             onClick = { onNoteClick(note.id) },
-                            onDelete = { viewModel.delete(note) },
+                            onDelete = { viewModel.delete(note.id) },
                             modifier = Modifier.animateItem()
                         )
                     }
@@ -139,7 +148,7 @@ fun NoteListScreen(
 /** Tarjeta de nota que se borra al deslizarla hacia la izquierda. */
 @Composable
 private fun SwipeToDeleteNote(
-    note: Note,
+    note: NotePreview,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -162,7 +171,7 @@ private fun SwipeToDeleteNote(
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
-                    Icons.Default.Delete,
+                    painterResource(R.drawable.ic_delete),
                     contentDescription = stringResource(R.string.delete),
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -174,7 +183,7 @@ private fun SwipeToDeleteNote(
 }
 
 @Composable
-private fun NoteCard(note: Note, onClick: () -> Unit) {
+private fun NoteCard(note: NotePreview, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -188,7 +197,7 @@ private fun NoteCard(note: Note, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = note.text,
+                text = note.preview,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
@@ -214,8 +223,11 @@ private fun EmptyState(query: String) {
         contentAlignment = Alignment.Center
     ) {
         val message =
-            if (query.isBlank()) stringResource(R.string.empty_notes)
-            else stringResource(R.string.empty_search, query)
+            if (query.isBlank()) {
+                stringResource(R.string.empty_notes)
+            } else {
+                stringResource(R.string.empty_search, query)
+            }
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,

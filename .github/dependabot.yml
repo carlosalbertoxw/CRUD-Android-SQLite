@@ -1,0 +1,24 @@
+# Dependabot propone cada semana PR con las versiones nuevas de las
+# dependencias de Gradle (gradle/libs.versions.toml) y de las acciones de
+# GitHub. Las agrupa para recibir pocos PR en lugar de uno por librería.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*", "org.jetbrains.kotlinx*", "com.google.devtools.ksp*"]
+      otras:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      acciones:
+        patterns: ["*"]

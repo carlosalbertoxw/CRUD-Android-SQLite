@@ -1,0 +1,19 @@
+# Formato compartido por el IDE y por ktlint (./gradlew ktlintCheck / ktlintFormat).
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+ktlint_code_style = android_studio
+# Los @Composable se nombran en PascalCase, como los componentes de Compose.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# El paquete lleva "_" porque coincide con el applicationId publicado; no se cambia.
+ktlint_standard_package-name = disabled
+
+[*.{yml,yaml}]
+indent_size = 2

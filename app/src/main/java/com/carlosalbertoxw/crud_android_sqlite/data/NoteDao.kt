@@ -18,24 +18,30 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface NoteDao {
-
-    @Query("SELECT * FROM notes ORDER BY updatedAt DESC")
-    fun observeAll(): Flow<List<Note>>
-
-    /**
-     * Busca [pattern] dentro del título o del contenido. El patrón debe llegar
-     * con `%`, `_` y `\` escapados (ver [escapeLike]) para que se busquen de
-     * forma literal y no como comodines de `LIKE`.
-     */
     @Query(
         """
-        SELECT * FROM notes
-        WHERE title LIKE '%' || :pattern || '%' ESCAPE '\'
-           OR text  LIKE '%' || :pattern || '%' ESCAPE '\'
+        SELECT id, title, substr(text, 1, $PREVIEW_LENGTH) AS preview, updatedAt
+        FROM notes
         ORDER BY updatedAt DESC
         """
     )
-    fun search(pattern: String): Flow<List<Note>>
+    fun observeAll(): Flow<List<NotePreview>>
+
+    /**
+     * Busca [pattern] dentro de la columna `searchKey`. El patrón debe llegar
+     * normalizado (ver [normalizeForSearch]) y con `%`, `_` y `\` escapados
+     * (ver [escapeLike]) para que se busquen de forma literal y no como
+     * comodines de `LIKE`.
+     */
+    @Query(
+        """
+        SELECT id, title, substr(text, 1, $PREVIEW_LENGTH) AS preview, updatedAt
+        FROM notes
+        WHERE searchKey LIKE '%' || :pattern || '%' ESCAPE '\'
+        ORDER BY updatedAt DESC
+        """
+    )
+    fun search(pattern: String): Flow<List<NotePreview>>
 
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getById(id: Long): Note?
@@ -51,5 +57,4 @@ interface NoteDao {
 }
 
 /** Escapa los comodines de `LIKE` para que el texto se busque tal cual. */
-fun String.escapeLike(): String =
-    replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+fun String.escapeLike(): String = replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

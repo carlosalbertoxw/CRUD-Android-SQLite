@@ -21,14 +21,14 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class NoteDaoTest {
-
     private lateinit var db: NoteDatabase
     private lateinit var dao: NoteDao
 
     @Before
     fun createDb() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        db = Room.inMemoryDatabaseBuilder(context, NoteDatabase::class.java)
+        db = Room
+            .inMemoryDatabaseBuilder(context, NoteDatabase::class.java)
             .allowMainThreadQueries()
             .build()
         dao = db.noteDao()
@@ -39,9 +39,17 @@ class NoteDaoTest {
         db.close()
     }
 
+    /** Nota con su clave de búsqueda calculada, como la guarda el repositorio. */
+    private fun note(title: String, text: String, updatedAt: Long = 0) = Note(
+        title = title,
+        text = text,
+        updatedAt = updatedAt,
+        searchKey = searchKeyOf(title, text)
+    )
+
     @Test
     fun insertAndReadById() = runTest {
-        val id = dao.insert(Note(title = "Hola", text = "Mundo"))
+        val id = dao.insert(note("Hola", "Mundo"))
 
         val loaded = dao.getById(id)
         assertEquals("Hola", loaded?.title)
@@ -50,8 +58,8 @@ class NoteDaoTest {
 
     @Test
     fun observeAllOrdersByUpdatedAtDesc() = runTest {
-        dao.insert(Note(title = "Vieja", text = "x", updatedAt = 1_000L))
-        dao.insert(Note(title = "Nueva", text = "y", updatedAt = 2_000L))
+        dao.insert(note("Vieja", "x", updatedAt = 1_000L))
+        dao.insert(note("Nueva", "y", updatedAt = 2_000L))
 
         val notes = dao.observeAll().first()
         assertEquals(2, notes.size)
@@ -59,10 +67,17 @@ class NoteDaoTest {
     }
 
     @Test
-    fun updateChangesStoredValues() = runTest {
-        val id = dao.insert(Note(title = "Antes", text = "v1"))
+    fun observeAllTruncatesPreview() = runTest {
+        dao.insert(note("Larga", "x".repeat(PREVIEW_LENGTH * 3)))
 
-        dao.update(Note(id = id, title = "Después", text = "v2"))
+        assertEquals(PREVIEW_LENGTH, dao.observeAll().first().single().preview.length)
+    }
+
+    @Test
+    fun updateChangesStoredValues() = runTest {
+        val id = dao.insert(note("Antes", "v1"))
+
+        dao.update(note("Después", "v2").copy(id = id))
 
         val loaded = dao.getById(id)
         assertEquals("Después", loaded?.title)
@@ -71,7 +86,7 @@ class NoteDaoTest {
 
     @Test
     fun deleteRemovesRow() = runTest {
-        val id = dao.insert(Note(title = "Temporal", text = "z"))
+        val id = dao.insert(note("Temporal", "z"))
 
         dao.delete(Note(id = id, title = "Temporal", text = "z"))
 
@@ -81,18 +96,26 @@ class NoteDaoTest {
 
     @Test
     fun searchMatchesTitleOrText() = runTest {
-        dao.insert(Note(title = "Lista de compras", text = "leche"))
-        dao.insert(Note(title = "Ideas", text = "comprar regalo"))
-        dao.insert(Note(title = "Trabajo", text = "reunión"))
+        dao.insert(note("Lista de compras", "leche"))
+        dao.insert(note("Ideas", "comprar regalo"))
+        dao.insert(note("Trabajo", "reunión"))
 
         val results = dao.search("compr").first()
         assertEquals("debe coincidir en título y en texto", 2, results.size)
     }
 
     @Test
+    fun searchIgnoresCaseAndAccents() = runTest {
+        dao.insert(note("REUNIÓN", "Año nuevo"))
+
+        assertEquals(1, dao.search("Reunión".normalizeForSearch()).first().size)
+        assertEquals(1, dao.search("ano".normalizeForSearch()).first().size)
+    }
+
+    @Test
     fun searchTreatsWildcardsLiterally() = runTest {
-        dao.insert(Note(title = "Descuento", text = "50% en todo"))
-        dao.insert(Note(title = "Otra", text = "sin porcentaje"))
+        dao.insert(note("Descuento", "50% en todo"))
+        dao.insert(note("Otra", "sin porcentaje"))
 
         assertEquals(1, dao.search("%".escapeLike()).first().size)
         assertTrue(dao.search("_".escapeLike()).first().isEmpty())

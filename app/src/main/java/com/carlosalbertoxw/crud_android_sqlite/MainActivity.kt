@@ -18,14 +18,13 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import com.carlosalbertoxw.crud_android_sqlite.ui.NEW_NOTE_ID
+import com.carlosalbertoxw.crud_android_sqlite.ui.NoteForm
 import com.carlosalbertoxw.crud_android_sqlite.ui.NoteFormViewModel
+import com.carlosalbertoxw.crud_android_sqlite.ui.NoteList
 import com.carlosalbertoxw.crud_android_sqlite.ui.NoteListViewModel
 import com.carlosalbertoxw.crud_android_sqlite.ui.screens.NoteFormScreen
 import com.carlosalbertoxw.crud_android_sqlite.ui.screens.NoteListScreen
 import com.carlosalbertoxw.crud_android_sqlite.ui.theme.CrudTheme
-import kotlinx.serialization.Serializable
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,14 +47,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Rutas de navegación con tipos seguros: el compilador comprueba los
-// argumentos en lugar de construir cadenas como "form/{noteId}" a mano.
-@Serializable
-private data object NoteList
-
-@Serializable
-private data class NoteForm(val noteId: Long = NEW_NOTE_ID)
-
 @Composable
 private fun NotesApp() {
     val navController = rememberNavController()
@@ -73,7 +64,8 @@ private fun NotesApp() {
             )
         }
         composable<NoteForm> { backStackEntry ->
-            val noteId = backStackEntry.toRoute<NoteForm>().noteId
+            // El ViewModel lee el id de la nota de la ruta NoteForm.
+            val formViewModel: NoteFormViewModel = viewModel(factory = NoteFormViewModel.Factory)
             // El borrado lo hace el ViewModel de la lista (que sigue vivo debajo)
             // para poder mostrar allí el Snackbar de "Deshacer".
             val listEntry = remember(backStackEntry) { navController.getBackStackEntry<NoteList>() }
@@ -82,10 +74,10 @@ private fun NotesApp() {
             val goBack = dropUnlessResumed { navController.popBackStack() }
 
             NoteFormScreen(
-                viewModel = viewModel(factory = NoteFormViewModel.factory(noteId)),
+                viewModel = formViewModel,
                 onDone = goBack,
                 onDelete = {
-                    listViewModel.deleteById(noteId)
+                    listViewModel.delete(formViewModel.noteId)
                     goBack()
                 }
             )

@@ -2,6 +2,8 @@ package com.carlosalbertoxw.crud_android_sqlite.ui
 
 import androidx.lifecycle.SavedStateHandle
 import com.carlosalbertoxw.crud_android_sqlite.data.FakeNoteDao
+import com.carlosalbertoxw.crud_android_sqlite.data.MAX_TEXT_LENGTH
+import com.carlosalbertoxw.crud_android_sqlite.data.MAX_TITLE_LENGTH
 import com.carlosalbertoxw.crud_android_sqlite.data.Note
 import com.carlosalbertoxw.crud_android_sqlite.data.NoteRepository
 import kotlinx.coroutines.flow.first
@@ -15,15 +17,16 @@ import org.junit.Test
 
 /** Pruebas JVM de [NoteFormViewModel]: carga, validación, guardado y borrador. */
 class NoteFormViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private lateinit var dao: FakeNoteDao
     private lateinit var repository: NoteRepository
 
     @Before
     fun setUp() {
-        repository = NoteRepository(FakeNoteDao())
+        dao = FakeNoteDao()
+        repository = NoteRepository(dao)
     }
 
     private fun viewModel(noteId: Long, handle: SavedStateHandle = SavedStateHandle()) =
@@ -76,7 +79,7 @@ class NoteFormViewModelTest {
         assertEquals(FormEvent.Saved, vm.events.first())
         val saved = repository.notes.first().single()
         assertEquals("Título", saved.title)
-        assertEquals("Contenido", saved.text)
+        assertEquals("Contenido", saved.preview)
     }
 
     @Test
@@ -90,6 +93,33 @@ class NoteFormViewModelTest {
         vm.save()
 
         assertEquals(1, repository.notes.first().size)
+    }
+
+    @Test
+    fun `si falla el guardado avisa y permite reintentar`() = runTest {
+        val vm = viewModel(NEW_NOTE_ID)
+        vm.onTitleChange("Título")
+        vm.onTextChange("Contenido")
+        dao.failWrites = true
+
+        vm.save()
+        assertEquals(FormEvent.SaveFailed, vm.events.first())
+
+        dao.failWrites = false
+        vm.save()
+        assertEquals(FormEvent.Saved, vm.events.first())
+        assertEquals(1, repository.notes.first().size)
+    }
+
+    @Test
+    fun `los textos se recortan al maximo permitido`() = runTest {
+        val vm = viewModel(NEW_NOTE_ID)
+
+        vm.onTitleChange("t".repeat(MAX_TITLE_LENGTH + 50))
+        vm.onTextChange("x".repeat(MAX_TEXT_LENGTH + 50))
+
+        assertEquals(MAX_TITLE_LENGTH, vm.title.value.length)
+        assertEquals(MAX_TEXT_LENGTH, vm.text.value.length)
     }
 
     @Test

@@ -10,10 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -37,10 +33,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.carlosalbertoxw.crud_android_sqlite.R
+import com.carlosalbertoxw.crud_android_sqlite.data.MAX_TEXT_LENGTH
+import com.carlosalbertoxw.crud_android_sqlite.data.MAX_TITLE_LENGTH
 import com.carlosalbertoxw.crud_android_sqlite.ui.FormEvent
 import com.carlosalbertoxw.crud_android_sqlite.ui.NoteFormViewModel
 import kotlinx.coroutines.launch
@@ -54,11 +53,7 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NoteFormScreen(
-    viewModel: NoteFormViewModel,
-    onDone: () -> Unit,
-    onDelete: () -> Unit = {}
-) {
+fun NoteFormScreen(viewModel: NoteFormViewModel, onDone: () -> Unit, onDelete: () -> Unit = {}) {
     val title by viewModel.title.collectAsStateWithLifecycle()
     val text by viewModel.text.collectAsStateWithLifecycle()
     val hasChanges by viewModel.hasChanges.collectAsStateWithLifecycle()
@@ -66,6 +61,7 @@ fun NoteFormScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val emptyMessage = stringResource(R.string.validation_empty)
+    val saveFailedMessage = stringResource(R.string.save_failed)
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     val currentOnDone by rememberUpdatedState(onDone)
 
@@ -73,8 +69,12 @@ fun NoteFormScreen(
         viewModel.events.collect { event ->
             when (event) {
                 FormEvent.Saved, FormEvent.NotFound -> currentOnDone()
+
                 FormEvent.ValidationError ->
                     scope.launch { snackbarHostState.showSnackbar(emptyMessage) }
+
+                FormEvent.SaveFailed ->
+                    scope.launch { snackbarHostState.showSnackbar(saveFailedMessage) }
             }
         }
     }
@@ -99,7 +99,7 @@ fun NoteFormScreen(
                 navigationIcon = {
                     IconButton(onClick = requestExit) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.back)
                         )
                     }
@@ -108,7 +108,7 @@ fun NoteFormScreen(
                     if (viewModel.isEditing) {
                         IconButton(onClick = onDelete) {
                             Icon(
-                                Icons.Default.Delete,
+                                painterResource(R.drawable.ic_delete),
                                 contentDescription = stringResource(R.string.delete)
                             )
                         }
@@ -118,7 +118,10 @@ fun NoteFormScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = viewModel::save) {
-                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
+                Icon(
+                    painterResource(R.drawable.ic_check),
+                    contentDescription = stringResource(R.string.save)
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -138,7 +141,8 @@ fun NoteFormScreen(
                 onValueChange = viewModel::onTitleChange,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text(stringResource(R.string.field_title)) }
+                label = { Text(stringResource(R.string.field_title)) },
+                supportingText = lengthCounter(title.length, MAX_TITLE_LENGTH)
             )
             OutlinedTextField(
                 value = text,
@@ -147,7 +151,8 @@ fun NoteFormScreen(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 minLines = 6,
-                label = { Text(stringResource(R.string.field_text)) }
+                label = { Text(stringResource(R.string.field_text)) },
+                supportingText = lengthCounter(text.length, MAX_TEXT_LENGTH)
             )
         }
     }
@@ -173,3 +178,11 @@ fun NoteFormScreen(
         )
     }
 }
+
+/** Muestra "n / máximo" bajo el campo solo cuando el texto se acerca al límite. */
+private fun lengthCounter(length: Int, max: Int): (@Composable () -> Unit)? =
+    if (length >= max * 9 / 10) {
+        { Text(stringResource(R.string.char_count, length, max)) }
+    } else {
+        null
+    }

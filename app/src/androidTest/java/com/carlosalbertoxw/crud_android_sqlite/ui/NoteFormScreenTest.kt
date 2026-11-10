@@ -51,8 +51,7 @@ class NoteFormScreenTest {
         repository = NoteRepository(db.noteDao())
     }
 
-    private fun newNoteViewModel() =
-        NoteFormViewModel(NEW_NOTE_ID, SavedStateHandle(), repository)
+    private fun newNoteViewModel() = NoteFormViewModel(NEW_NOTE_ID, SavedStateHandle(), repository)
 
     @After
     fun tearDown() {

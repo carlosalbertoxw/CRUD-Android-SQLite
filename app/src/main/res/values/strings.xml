@@ -26,4 +26,13 @@
     <string name="discard_message">Tienes cambios sin guardar en esta nota.</string>
     <string name="discard">Descartar</string>
     <string name="keep_editing">Seguir editando</string>
+
+    <!-- Errores -->
+    <string name="save_failed">No se pudo guardar la nota. Inténtalo de nuevo.</string>
+    <string name="operation_failed">No se pudo completar la operación.</string>
+    <string name="char_count" translatable="false">%1$d / %2$d</string>
+
+    <!-- Nota de ejemplo que se crea la primera vez -->
+    <string name="seed_title">Bienvenido a Notas</string>
+    <string name="seed_text">Esta es una nota de ejemplo. Tócala para editarla, usa el botón + para crear otra y deslízala hacia la izquierda para borrarla. También puedes buscar por título o contenido.</string>
 </resources>
