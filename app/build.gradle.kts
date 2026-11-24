@@ -12,7 +12,13 @@ plugins {
 
 android {
     namespace = "com.carlosalbertoxw.crud_android_sqlite"
-    compileSdk = 37
+    // Compose 1.13 (BOM 2026.11) exige compilar contra la API 37.1 o superior.
+    compileSdk {
+        version =
+            release(37) {
+                minorApiLevel = 2
+            }
+    }
 
     defaultConfig {
         applicationId = "com.carlosalbertoxw.crud_android_sqlite"
